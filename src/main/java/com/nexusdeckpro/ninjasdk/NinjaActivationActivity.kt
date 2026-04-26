@@ -149,7 +149,7 @@ class NinjaActivationActivity : AppCompatActivity() {
         NinjaHandshake(this).validateLicense(key) { success, error ->
             runOnUiThread {
                 setLoading(false)
-                if (success) { startActivity(Intent(this, cfg.mainActivity)); finish() }
+                if (success) { startActivity(Intent(this@NinjaActivationActivity, cfg.mainActivity)); finish() }
                 else showStatus(error ?: "Clave incorrecta o expirada", false)
             }
         }
