@@ -63,7 +63,7 @@ class NinjaHandshake(private val context: Context) {
         })
     }
 
-    fun autoReconnect(callback: (Boolean) -> Unit) {
+    fun autoReconnect(callback: (Boolean, String?) -> Unit) {
         val cfg = NinjaMagic.config()
         val hwid = getHardwareId()
         val timestamp = System.currentTimeMillis()
@@ -80,14 +80,17 @@ class NinjaHandshake(private val context: Context) {
             .post(body).build()
 
         client.newCall(request).enqueue(object : okhttp3.Callback {
-            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) { callback(false) }
+            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) { callback(false, null) }
             override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-                val data = response.body?.string()
-                if (response.isSuccessful && data != null) {
-                    val token = JSONObject(data).optString("token")
-                    if (token.isNotEmpty()) { saveToken(token); callback(true) }
-                    else callback(false)
-                } else callback(false)
+                val raw = response.body?.string() ?: "{}"
+                if (response.isSuccessful) {
+                    val token = JSONObject(raw).optString("token")
+                    if (token.isNotEmpty()) { saveToken(token); callback(true, null) }
+                    else callback(false, null)
+                } else {
+                    val error = JSONObject(raw).optString("error", null)
+                    callback(false, error)
+                }
             }
         })
     }

@@ -7,6 +7,7 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
 class NinjaSplashActivity : AppCompatActivity() {
@@ -17,21 +18,40 @@ class NinjaSplashActivity : AppCompatActivity() {
 
         val handshake = NinjaHandshake(this)
         if (handshake.isActivated()) {
-            handshake.autoReconnect { success ->
+            handshake.autoReconnect { success, error ->
                 runOnUiThread {
-                    if (success) {
-                        startActivity(Intent(this, NinjaMagic.config().mainActivity))
-                    } else {
-                        handshake.logout()
-                        startActivity(Intent(this, NinjaActivationActivity::class.java))
+                    when {
+                        success -> {
+                            startActivity(Intent(this, NinjaMagic.config().mainActivity))
+                            finish()
+                        }
+                        error != null -> {
+                            // Licencia o trial expirado — bloquear la app con el mensaje del servidor
+                            handshake.logout()
+                            showBlockedDialog(error)
+                        }
+                        else -> {
+                            // Sin conexión u error desconocido — volver a activación
+                            handshake.logout()
+                            startActivity(Intent(this, NinjaActivationActivity::class.java))
+                            finish()
+                        }
                     }
-                    finish()
                 }
             }
         } else {
             startActivity(Intent(this, NinjaActivationActivity::class.java))
             finish()
         }
+    }
+
+    private fun showBlockedDialog(message: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Acceso bloqueado")
+            .setMessage(message)
+            .setCancelable(false)
+            .setPositiveButton("Cerrar") { _, _ -> finishAffinity() }
+            .show()
     }
 
     private fun buildSplashUI() {
